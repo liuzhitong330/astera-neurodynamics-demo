@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A real-data C. elegans neurodynamics analysis prepared by Cathy Liu for Astera Institute's DynamoBrain team.">
+  <title>Exploratory Analyses Inspired by Astera Neuro &amp; DynamoBrain</title>
+  <link rel="stylesheet" href="styles.css?v=1">
+</head>
+<body>
+  <main class="page">
+    <h1>Exploratory Analyses Inspired by Astera Neuro &amp; DynamoBrain</h1>
+    <div class="byline">
+      Cathy Liu · Computational neuroscience · <a href="mailto:cathyliu014@gmail.com">cathyliu014@gmail.com</a><br>
+      Prepared for DynamoBrain, Astera Institute<br>
+      Personal exploratory project, August 2026
+    </div>
+
+    <nav class="section-nav" aria-label="Demo sections">
+      <a href="#motivation">Motivation</a>
+      <a href="#a1">Perturbation shortlist</a>
+      <a href="#a2">Sequence model</a>
+      <a href="#relevance">Relevance</a>
+    </nav>
+
+    <p class="opening">Astera Neuro is trying to connect large-scale recordings, anatomical wiring and dynamical models closely enough that a model can suggest the next experiment. The difficult part is deciding whether a neuron is interesting because its activity changes with a state, because it is a structural hub, or because both pieces of evidence agree.</p>
+    <p class="opening">I built a small cross-dataset analysis that joins whole-brain calcium activity from five <em>C. elegans</em> with a 279-neuron connectome, then turns a chosen behavioral contrast into a sensitivity-tested perturbation shortlist. A second analysis runs Astera’s public Clone-Structured Cognitive Graph code on the measured state sequences and checks its predictive value on held-out animals.</p>
+
+    <hr id="motivation">
+    <section aria-labelledby="how-heading">
+      <h2 id="how-heading">How it works</h2>
+      <p>The Kato et al. dataset contributes 15,662 calcium-imaging frames across five unstimulated animals. I z-scored each neuron within recording, retained identified neurons observed in at least two animals, and measured how activity shifts between annotated motor states. Those effects are kept separate from weighted anatomical strength in the Varshney connectome, so the balance can be changed without hiding the tradeoff.</p>
+    </section>
+
+    <hr id="a1">
+    <section aria-labelledby="analysis-one-heading">
+      <h2 id="analysis-one-heading">Analysis 1 — Choose a perturbation that survives two kinds of evidence</h2>
+      <div class="experiment">
+        <div class="exp-label">Method</div>
+        <div class="exp-title">State contrast × cross-animal agreement × anatomical strength</div>
+        <p>Choose a motor-state contrast and move the evidence slider. The recommendation changes when a strong physiological marker and a highly connected hub are not the same neuron.</p>
+      </div>
+
+      <div class="panel">
+        <div class="control-grid">
+          <label class="control-field" for="transition-select">
+            <span>Behavioral contrast</span>
+            <select id="transition-select"></select>
+          </label>
+          <label class="control-field" for="evidence-balance">
+            <span>Activity evidence <strong id="balance-value">70%</strong></span>
+            <input id="evidence-balance" type="range" min="0" max="100" step="5" value="70">
+            <span class="range-ends"><span>anatomy</span><span>activity</span></span>
+          </label>
+        </div>
+        <fieldset class="direction-control">
+          <legend>Experimental aim</legend>
+          <label><input type="radio" name="aim" value="promote" checked> Promote the target state</label>
+          <label><input type="radio" name="aim" value="block"> Block the transition</label>
+        </fieldset>
+
+        <div class="ranking" id="ranking" aria-label="Ranked perturbation candidates"></div>
+        <svg id="hero-viz" class="viz profile-viz" viewBox="0 0 600 300" role="img" aria-label="Selected neuron's activity across eight behavioral states"></svg>
+        <div class="readout" id="readout" aria-live="polite"></div>
+        <div class="value-note">
+          <p><strong>What this lets the lab do:</strong> compare an activity-led and anatomy-led first perturbation, then carry one candidate into a calcium-imaging experiment with an explicit behavioral readout.</p>
+          <p><strong>Where Cathy adds value:</strong> I implemented the data join, neuron-name reconciliation, cross-recording effect check, graph metric and sensitivity-tested recommendation in one reproducible Python-to-browser analysis.</p>
+        </div>
+        <figcaption>Measured activity: Kato et al. 2015 OSF 2395t, five wild-type no-stimulus recordings. Anatomy: Varshney et al. 2011 weighted chemical and gap-junction matrices. Scores nominate experiments; they are not causal estimates.</figcaption>
+      </div>
+
+      <div class="metric-row">
+        <div class="metric"><span class="metric-val" id="metric-one">15,662</span><span class="metric-desc">measured calcium frames</span></div>
+        <div class="metric"><span class="metric-val" id="metric-two">5</span><span class="metric-desc">independent animals</span></div>
+        <div class="metric"><span class="metric-val" id="metric-three">50</span><span class="metric-desc" id="metric-three-label">named neurons matched to anatomy</span></div>
+      </div>
+    </section>
+
+    <hr id="a2">
+    <section aria-labelledby="analysis-two-heading">
+      <h2 id="analysis-two-heading">Analysis 2 — Does hidden context improve state-sequence prediction?</h2>
+      <div class="experiment">
+        <div class="exp-label">Result</div>
+        <div class="exp-title">Leave-one-animal-out evaluation of Astera’s CSCG implementation</div>
+        <p>A single observed motor label can occur in different temporal contexts. Clone-Structured Cognitive Graphs assign more than one hidden state to the same observation; the question is whether that extra structure predicts a held-out animal better.</p>
+      </div>
+      <div class="panel">
+        <div class="model-tabs" id="model-tabs" role="group" aria-label="Clones per observed state"></div>
+        <svg id="model-viz" class="viz model-viz" viewBox="0 0 600 260" role="img" aria-label="Held-out bits per step across five animals"></svg>
+        <div class="readout" id="model-readout" aria-live="polite"></div>
+        <figcaption>Five folds; lower held-out bits per step is better. Models use the public <a href="https://github.com/Astera-org/naturecomm_cscg">Astera-org/naturecomm_cscg</a> implementation at commit <code>66c81ea</code>. A separate boundary action prevents concatenated training animals from creating false biological transitions.</figcaption>
+      </div>
+      <p>The three-clone model reached 0.2567 held-out bits per step versus 0.2634 with one clone, a 2.54% improvement. The fold-to-fold spread is larger than the mean gain, so this is evidence to keep latent context in the model comparison, not evidence that three clones is the final biological answer.</p>
+    </section>
+
+    <hr id="relevance">
+    <section aria-labelledby="relevance-heading">
+      <h2 id="relevance-heading">Why this matters for the lab</h2>
+      <p>DynamoBrain’s intern role sits exactly at this junction: process neurophysiology, inspect connectomics, build models of network dynamics and use the result to generate hypotheses with experimental colleagues. The shortlist makes the disagreement between activity and anatomy visible; the held-out model check prevents extra dynamical complexity from being rewarded merely because it fits the training sequence.</p>
+
+      <h2>What I would bring</h2>
+      <p>I would bring Python and MATLAB analysis, neuroscience modeling from my virtual epilepsy neurostimulation work, and wet-lab experience that helps turn a computational ranking into a realistic perturbation, control and readout. I am especially comfortable moving between a model’s assumptions and the experiment that could falsify them.</p>
+
+      <h2>Methods note</h2>
+      <p class="methods-note">This is a processed-data analysis, not a reanalysis of raw image volumes. Kato neuron identities are incomplete and differ across animals; only named neurons appearing in at least two recordings and present in the 279-neuron connectome enter the shortlist. Activity is observational and calcium dynamics are slow. The connectome does not encode synaptic sign, state dependence or animal-specific wiring. Full transformations, hashes and limitations are in the <a href="https://github.com/liuzhitong330/astera-neurodynamics-demo/blob/main/analysis/PROVENANCE.md">provenance record</a>. Sources: <a href="https://doi.org/10.1016/j.cell.2015.09.034">Kato et al. 2015</a>, <a href="https://osf.io/2395t/">OSF 2395t</a>, <a href="https://doi.org/10.1371/journal.pcbi.1001066">Varshney et al. 2011</a>, and the <a href="https://github.com/Astera-org/naturecomm_cscg">Astera CSCG repository</a>.</p>
+    </section>
+
+    <footer>
+      Cathy Liu · <a href="mailto:cathyliu014@gmail.com">cathyliu014@gmail.com</a> · <a href="tel:+14152163799">415-216-3799</a><br>
+      Epilepsy neurostimulation project, <a href="https://arxiv.org/abs/2606.04339">arXiv:2606.04339</a>
+    </footer>
+  </main>
+
+  <script src="data.js?v=1"></script>
+  <script src="app.js?v=1"></script>
+</body>
+</html>
